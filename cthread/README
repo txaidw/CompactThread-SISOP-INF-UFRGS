@@ -1,0 +1,30 @@
+
+Estrutura de diretórios de mthread
+
+cthread/
+|-- bin
+|   `-- fila2.o
+|-- exemplos
+|   |-- exemplo.c
+|   |-- Makefile
+|   |-- mandel.c
+|   `-- teste_vetor.c
+|-- include
+|   |-- fila2.h
+|   |-- cdata.h
+|   `-- cthread.h
+|-- lib
+|-- src
+|-- testes
+|-- Makefile
+`-- README
+
+O trabalho entregue deve seguir RIGOROSAMENTE a estrutura de diretórios acima. Os testes desenvolvidos pelo grupo devem estar no diretório testes com um Makefile adequado para a compilação de todos os testes (regra all) e limpeza (regra clean), conforme especificação.
+
+Atenciosamente
+A. Carissimi/S. Cechin
+2016-01
+
+
+
+
