@@ -6,6 +6,9 @@
  *
  * VERSÃO 1 - 04/04/2016
  */
+
+#include "../include/fila2.h"
+
 #ifndef __cthread__
 #define __cthread__
 
