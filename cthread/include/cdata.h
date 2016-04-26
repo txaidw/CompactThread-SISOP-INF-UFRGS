@@ -17,6 +17,8 @@
 #define	PROCST_BLOQ	3
 #define	PROCST_TERMINO	4
 
+#define ERROR_CODE -1
+#define SUCCESS_CODE 0
 
 #define CPRINT(X) printf X // <--- For DEBUG uncommet the print!
 
@@ -28,11 +30,12 @@ typedef struct s_TCB {
 	ucontext_t 	context;	// contexto de execução da thread (SP, PC, GPRs e recursos) 
 } TCB_t; 
 
-
-/* Essa struct representa as pilhas de TCBs da biblioteca */
-typedef struct TCB_queue {
-  TCB_t *first;
-  TCB_t *last;
-} TCB_queue_t;
-
 #endif
+
+
+int initializeAllQueues();
+TCB_t* blocked_thread_waiting_for_tid(int);
+void blocked_tid_list_remove(int blocked_id);
+void blocked_list_wait_remove(TCB_t *thread);
+void ready_queue_insert(TCB_t *thread);
+TCB_t* ready_queue_remove_and_return();

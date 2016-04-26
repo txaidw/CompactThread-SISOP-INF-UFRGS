@@ -1,44 +1,46 @@
+#define _XOPEN_SOURCE 600 // Solves a OSX deprecated library problem of ucontext.h
+#include <ucontext.h>
 
 #include "../include/cthread.h"
+#include "../include/cdata.h"
 
-// #include "../include/pithread.h"
-// #include "../include/pidata.h"
-// #include <stdlib.h>
-// #include <stdio.h>
-// #include <stdbool.h>
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdbool.h>
 
 
 /*----------------------------------------------------------------------------*/
 /*                                    DATA                                    */
 /*----------------------------------------------------------------------------*/
 int global_var_tid = 0;
-// ucontext_t *ending_contex = NULL;
-// static bool initialized = false;
+ucontext_t *ending_contex = NULL;
+static bool initialized = false; // Library was already initialized
 TCB_t *current_running_thread = NULL;
 
 
-// /*----------------------------------------------------------------------------*/
-// /*                              GENERAL FUNCTIONS                             */
-// /*----------------------------------------------------------------------------*/
+/*----------------------------------------------------------------------------*/
+/*                              GENERAL FUNCTIONS                             */
+/*----------------------------------------------------------------------------*/
 
 
-// /// Returns a new TCB from the ready queues
-// /// 
-// TCB_t* get_new_thread() {
-// 	TCB_t *first_thread = ready_queue_remove_and_return();
-// 	if (first_thread == NULL) {
-// 		PIPRINT(("ERROR_CODE: first_thread == NULL\n"));
-// 		return NULL;
-// 	} else {
-// 		return first_thread;
-// 	}
-// }
+/// Returns a new TCB from the ready queues
+/// 
+TCB_t* get_new_thread() {
+	TCB_t *first_thread = ready_queue_remove_and_return();
+	if (first_thread == NULL) {
+		CPRINT(("ERROR_CODE: first_thread == NULL\n"));
+		return NULL;
+	} else {
+		return first_thread;
+	}
+}
 
 
 // /// The function run_scheduler its called when the thread current in execution needs to leave execution.
 // /// It handles the current_running_thread, blocking, seting the context, etc.
 // /// And after this it pops another thread from the queue, and puts in execution.
-// int run_scheduler() {
+void run_scheduler() {
 // 	/* Remove current thread from the ready queue. */
 // 	volatile bool already_swapped_context = false;
 
@@ -88,122 +90,127 @@ TCB_t *current_running_thread = NULL;
 // 			PIPRINT(("[PI]: Thread %d is active now\n", current_running_thread->tid));
 // 			current_running_thread->state = PI_EXEC;
 //     		setcontext(&(current_running_thread->context));
-//     		return SUCESS_CODE;
+//     		return SUCCESS_CODE;
 // 		}
 // 	} else {
-// 		return SUCESS_CODE;
+// 		return SUCCESS_CODE;
 // 	}
-// }
+}
 
 
 
-// /// The function executed by the end_thread_context, on the end of each thread execution (via uc_link)
-// /// Besides freeing resources it unlocks threads that were previously waiting for it.
-// void end_thread_execution() {
+/// The function executed by the end_thread_context, on the end of each thread execution (via uc_link)
+/// Besides freeing resources it unlocks threads that were previously waiting for it.
+void end_thread_execution() {
+	if(current_running_thread != NULL) {
+		int runnig_tid = current_running_thread->tid;
 
-// 	if(current_running_thread != NULL){
-// 		int runnig_tid = current_running_thread->tid;
+		CPRINT(("[C]: Thread %d is beeing released\n", runnig_tid));
+		current_running_thread->state = PROCST_TERMINO;
 
-// 		PIPRINT(("[PI]: Thread %d is beeing released\n", runnig_tid));
-// 		current_running_thread->state = PI_FINISHED;
+		free(current_running_thread);
+		current_running_thread = NULL;
+		// Search for a thread that is waiting for this one to finish.
+		TCB_t *waiting_thread = blocked_thread_waiting_for_tid(runnig_tid);
+		// There was a thread waiting for it to finish
+		if (waiting_thread != NULL) {
 
-// 		free(current_running_thread);
-// 		current_running_thread = NULL;
-// 		// Search for a thread that is waiting for this one to finish.
-// 		TCB_t *waiting_thread = thread_blocked_waiting_for(runnig_tid);
-// 		// There was a thread waiting for it to finish
-// 		if (waiting_thread != NULL) {
+			blocked_tid_list_remove(waiting_thread->tid);
+			blocked_list_wait_remove(waiting_thread);
+			waiting_thread->state = PROCST_APTO;
 
-// 			blocked_tid_list_remove(waiting_thread->tid);
-// 			blocked_list_wait_remove(waiting_thread);
-// 			waiting_thread->state = PI_READY;
-
-// 			PIPRINT(("[PI]: Thread (%d) receive #20 credits\n", waiting_thread->tid));
-// 			int cred = waiting_thread->credReal;
-// 			cred = cred+20;
-// 			waiting_thread->credReal = (cred < 100 ? cred : 100);
-			
-// 			ready_queue_insert(waiting_thread);
-// 			run_scheduler();
-// 		} else {
-// 			run_scheduler();
-// 		}
-// 	} else {
-// 		PIPRINT(("ERROR_CODE: No thread in the queue;"));
-// 	}
-// }
+			ready_queue_insert(waiting_thread);
+			run_scheduler();
+		} else {
+			run_scheduler();
+		}
+	} else {
+		CPRINT(("ERROR_CODE: No thread in the queue;"));
+	}
+}
 
 
-// /*----------------------------------------------------------------------------*/
-// /*                            LIB INITIALIZATION                              */
-// /*----------------------------------------------------------------------------*/
+/*----------------------------------------------------------------------------*/
+/*                            LIB INITIALIZATION                              */
+/*----------------------------------------------------------------------------*/
 
-// /// This function is responsable to the creation of the main thread TCB
-// /// and insert in the ready queue
-// int init_main_thread() {
-// 	TCB_t *thread = (TCB_t*)malloc(sizeof(TCB_t));
+/// This function is responsable to the creation of the main thread TCB
+/// and insert in the ready queue
+int init_main_thread() {
+	TCB_t *thread = (TCB_t*)malloc(sizeof(TCB_t));
 
-// 	thread->tid = global_var_tid;
-// 	thread->state = PI_CREATION;
-// 	thread->credCreate = thread->credReal = MAX_THREAD_PRIORITY;
-// 	thread->next = NULL;
-// 	thread->prev = NULL;
+	thread->tid = global_var_tid;
+	thread->state = PROCST_CRIACAO;
 	
-// 	if (((thread->context).uc_stack.ss_sp = malloc(SIGSTKSZ)) == NULL) {
-// 		printf("[PI ERROR]: No memory for stack allocation!");
-// 		return ERROR_CODE;
-// 	} else {
-// 		(thread->context).uc_stack.ss_size = SIGSTKSZ;
-// 		(thread->context).uc_link = NULL;
-// 		ready_queue_insert(thread);
-// 		getcontext(&(thread->context));
-// 		return SUCESS_CODE;
-// 	}
-// }
+	if (((thread->context).uc_stack.ss_sp = malloc(SIGSTKSZ)) == NULL) {
+		CPRINT(("[C ERROR]: No memory for stack allocation!"));
+		return ERROR_CODE;
+	} else {
+		(thread->context).uc_stack.ss_size = SIGSTKSZ;
+		(thread->context).uc_link = NULL;
+		ready_queue_insert(thread);
+		getcontext(&(thread->context));
+		return SUCCESS_CODE;
+	}
+}
 
 
 // /// This initializer creates a end_thread_context, that runs the end_thread_execution function
-// /// Each Thread that reaches if end, link (via uc_link) to this context, that handles desalock and unlock threads waiting
-// int init_end_thread_context() {
-// 	ending_contex = (ucontext_t *) malloc(sizeof(ucontext_t));
+// /// Each Thread that reaches the end, links (via uc_link) to this context, that handles desallock and unlock threads waiting
+int init_end_thread_context() {
+	ending_contex = (ucontext_t *) malloc(sizeof(ucontext_t));
 
-// 	if (getcontext(ending_contex) != 0 || ending_contex == NULL) {
-// 		return ERROR_CODE;
-// 	} else {
-// 		ending_contex->uc_stack.ss_sp = (char *) malloc(SIGSTKSZ);
-// 		ending_contex->uc_stack.ss_size = SIGSTKSZ;
-// 		ending_contex->uc_link = NULL;
+	if (getcontext(ending_contex) != 0 || ending_contex == NULL) {
+		return ERROR_CODE;
+	} else {
+		ending_contex->uc_stack.ss_sp = (char *) malloc(SIGSTKSZ);
+		ending_contex->uc_stack.ss_size = SIGSTKSZ;
+		ending_contex->uc_link = NULL;
 
-// 		makecontext(ending_contex, end_thread_execution, 0);
-// 		return SUCESS_CODE;
-// 	}
-// }
+		makecontext(ending_contex, end_thread_execution, 0);
+		return SUCCESS_CODE;
+	}
+}
 
 
-// /// This function is called only one time, on the first function provided
-// /// by the lib.
-// int internal_init(){
-// 	if (!initialized) {
-// 		initialized = true;
-// 		global_var_tid = 0;
-// 		if (init_end_thread_context() != SUCESS_CODE) {
-// 			PIPRINT(("ERROR_CODE: init_end_thread_context"));
-// 			return ERROR_CODE;
-// 		} else if(init_main_thread() != SUCESS_CODE) {
-// 			PIPRINT(("ERROR_CODE: init_main_thread"));
-// 			return ERROR_CODE;
-// 		} else {
-// 			volatile bool main_thread_created = false;
-// 			if (!main_thread_created) {
-// 				main_thread_created = true;
-// 				run_scheduler();
-// 			}
-//             return SUCESS_CODE;
-// 		}
-// 	} else {
-// 		return SUCESS_CODE;
-// 	}
-// }
+/// This function is called only one time, on the first function provided
+/// by the lib.
+int internal_init() {
+	if (!initialized) {
+		initialized = true;
+		global_var_tid = 0;
+		
+		if (initializeAllQueues() != SUCCESS_CODE) {
+			CPRINT(("ERROR_CODE: initializeAllQueues"));
+			return ERROR_CODE;			
+		}
+
+		else if (init_end_thread_context() != SUCCESS_CODE) {
+			CPRINT(("ERROR_CODE: init_end_thread_context"));
+			return ERROR_CODE;
+		}
+
+		else if (init_main_thread() != SUCCESS_CODE) {
+			CPRINT(("ERROR_CODE: init_main_thread"));
+			return ERROR_CODE;
+		}
+
+		else { 
+			CPRINT(("DONT UNDERSTAND: init_main_thread"));
+			volatile bool main_thread_created = false;
+			if (!main_thread_created) {
+				CPRINT(("DONT UNDERSTAND: init_main_thread IFIF"));
+				main_thread_created = true;
+				run_scheduler();
+			} else {
+				CPRINT(("DONT UNDERSTAND: init_main_threadELSE ELSE"));
+			}
+			return SUCCESS_CODE;
+		}
+	} else {
+		return ERROR_CODE;
+	}
+}
 
 
 // /*----------------------------------------------------------------------------*/
@@ -248,7 +255,7 @@ TCB_t *current_running_thread = NULL;
 // 		PIPRINT(("[PI] Yield\n"));
 // 		return run_scheduler();
 // 	} else {
-// 		return SUCESS_CODE;
+// 		return SUCCESS_CODE;
 // 	}
 // }
 
@@ -269,7 +276,7 @@ TCB_t *current_running_thread = NULL;
 // 		    blocked_list_wait_insert(current_running_thread);
 // 		    return run_scheduler();
 // 		} else {
-// 			return SUCESS_CODE;
+// 			return SUCCESS_CODE;
 // 		}
 // 	}
 // }
@@ -296,7 +303,7 @@ TCB_t *current_running_thread = NULL;
 // 	mtx->flag = MTX_UNLOCKED;
 // 	mtx->first = NULL;
 // 	mtx->last = NULL;
-// 	return SUCESS_CODE;
+// 	return SUCCESS_CODE;
 // }
 
 
@@ -329,7 +336,7 @@ TCB_t *current_running_thread = NULL;
 // 			// The resouce is NOT being used, so the thread is goint to use.
 // 			PIPRINT(("Now locked\n"));
 // 			mtx->flag = MTX_LOCKED;
-// 			return SUCESS_CODE;
+// 			return SUCCESS_CODE;
 // 		} else {
 // 			return ERROR_CODE;
 // 		}
@@ -379,7 +386,7 @@ TCB_t *current_running_thread = NULL;
 // 			mtx->flag = MTX_UNLOCKED;
 // 		}
 
-// 		return SUCESS_CODE;
+// 		return SUCCESS_CODE;
 // 	} else {
 // 		PIPRINT(("[PI ERROR]: Mutex unlock error"));
 // 		return ERROR_CODE;

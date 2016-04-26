@@ -1,49 +1,26 @@
 
 #include "../include/cdata.h"
+#include "../include/fila2.h"
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdbool.h>
 
-// #define _XOPEN_SOURCE 600 // Solves a OSX deprecated library problem of ucontext.h
-// #include <ucontext.h>
-// #include <stdlib.h>
-// #include <stdio.h>
-// #include <stdbool.h>
-
-TCB_queue_t *ready_active;
-TCB_queue_t *ready_expired;
+FILA2 *ready_active;
+FILA2 *ready_blocked;
 // TCB_queue_t *blocked_list_mutex;
 // TCB_queue_t *blocked_list_waiting;
 // TCB_waiting_t *blocked_tid_list;
 
-/*----------------------------------------------------------------------------*/
-void initializeQueue(TCB_queue_t **queue) {
-    if (*queue == NULL) {
-        *queue = (TCB_queue_t *) malloc(sizeof(TCB_queue_t));
-        (*queue)->start = NULL;
-        (*queue)->end = NULL;
-    } else {
-        printf("Queue already initialized");
-    }
+
+void initializeAllQueues() {
+	CreateFila2(ready_active);
+	CreateFila2(ready_blocked);
 }
 
-// /*----------------------------------------------------------------------------*/
-// void queue_insert(TCB_queue_t **queue, TCB_t *new_tcb) {
-// 	 new_tcb->prev = NULL;
-// 	 new_tcb->next = NULL;
- 
-//     if ((*queue) == NULL) {
-//         initializeQueue(queue);
-//     }
 
-//     if ((*queue)->start == NULL && (*queue)->end == NULL) {
-//       (*queue)->start = (*queue)->end = new_tcb;
-//     } else if ((*queue)->start == NULL || (*queue)->end == NULL) {
-//         printf("Something is wrong... #1\n");
-//     } else {
-//       (*queue)->start->prev = new_tcb;
-//       new_tcb->next = (*queue)->start;
-//       (*queue)->start = new_tcb;
-//     }
-// }
-
+TCB_t* blocked_thread_waiting_for_tid() {
+	return NULL;
+}
 // /*----------------------------------------------------------------------------*/
 // void blocked_tid_list_insert(TCB_waiting_t *entry) {
 //   entry->next = NULL;
@@ -74,7 +51,7 @@ void initializeQueue(TCB_queue_t **queue) {
 // }
 
 // /*----------------------------------------------------------------------------*/
-// void blocked_tid_list_remove(int blocked_id) {
+void blocked_tid_list_remove(int blocked_id) {
 
 //   if(blocked_tid_list == NULL) {
 //       blocked_tid_list = NULL;       
@@ -95,46 +72,7 @@ void initializeQueue(TCB_queue_t **queue) {
 //         node = node->next;
 //     }
 //   }
-// }
-
-// /*----------------------------------------------------------------------------*/
-// TCB_t* queue_remove(TCB_queue_t *queue) {
- 
-//   if ((queue == NULL) || (queue->start == NULL && queue->end == NULL)) {
-//       return NULL;
-//   } else if (queue->start == NULL || queue->end == NULL) {
-//       printf("Something is wrong... #2\n");
-//       return NULL;
-//   } else {
-
-//     TCB_t *to_remove = queue->end;
-//     TCB_t *prev = to_remove->prev;
-
-//     queue->end = prev;
-
-//     if (queue->end == NULL) {
-//         queue->start = queue->end;
-//     } else {
-//       queue->end->next = NULL;
-//     }
-//     to_remove->prev = NULL;
-//     to_remove->next = NULL;
-//     return to_remove;
-//     }
-// }
-
-// /*----------------------------------------------------------------------------*/
-// TCB_t* queue_return(TCB_queue_t *queue) {
- 
-//   if ((queue == NULL) || (queue->start == NULL && queue->end == NULL)) {
-//       return NULL;
-//   } else if (queue->start == NULL || queue->end == NULL) {
-//       printf("Something is wrong... #2\n");
-//       return NULL;
-//   } else {
-//     return queue->end;
-//   }
-// }
+}
 
 // /*----------------------------------------------------------------------------*/
 // TCB_t* queue_thread_with_id(TCB_queue_t *queue, int thread_id) {
@@ -257,18 +195,6 @@ void initializeQueue(TCB_queue_t **queue) {
 // }
 
 // /*----------------------------------------------------------------------------*/
-// void swap_queues() {
-//   int i;
-//   for (i = 0; i < MAX_THREAD_PRIORITY; i++) {
-//     TCB_t *thread = queue_remove(ready_expired[i]);
-//     while(thread != NULL) {
-//         queue_insert(&ready_active[i], thread);
-//         thread = queue_remove(ready_expired[i]);
-//     }
-//   }
-// }
-
-// /*----------------------------------------------------------------------------*/
 // TCB_t* ready_queue_remove_and_return() {
 
 // 	int top_priority = MAX_THREAD_PRIORITY-1;
@@ -344,9 +270,9 @@ void initializeQueue(TCB_queue_t **queue) {
 // }
 
 // /*----------------------------------------------------------------------------*/
-// void blocked_list_wait_remove(TCB_t *thread) {
+void blocked_list_wait_remove(TCB_t *thread) {
 // 	remove_from_list(blocked_list_waiting, thread);
-// }
+}
 
 // /*----------------------------------------------------------------------------*/
 // void printAllQueues() {
