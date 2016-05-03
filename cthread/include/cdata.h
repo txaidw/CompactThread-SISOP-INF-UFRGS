@@ -30,12 +30,29 @@ typedef struct s_TCB {
 	ucontext_t 	context;	// contexto de execução da thread (SP, PC, GPRs e recursos) 
 } TCB_t; 
 
+typedef struct TCB_tid_waiting {
+	int waiting_for_thread_id;
+	TCB_t *blocked_thread;
+} TCB_tid_waiting_t;
+
 #endif
 
 
 int initializeAllQueues();
-TCB_t* blocked_thread_waiting_for_tid(int);
-void blocked_tid_list_remove(int blocked_id);
-void blocked_list_wait_remove(TCB_t *thread);
-void ready_queue_insert(TCB_t *thread);
+int ready_queue_insert(TCB_t *thread);
 TCB_t* ready_queue_remove_and_return();
+TCB_t* ready_queue_return_thread_with_id(int tid);
+bool ready_queue_is_empty();
+
+int semaphore_list_append_if_not_contained(csem_t *sem);
+TCB_t* semaphore_list_remove_first(csem_t *sem);
+
+// TCB_t* blocked_thread_waiting_for_tid(int);
+// int tid_blocked_list_insert(TCB_tid_waiting_t *entry);
+// int tid_blocked_list_remove(TCB_tid_waiting_t *entry);
+
+int blocked_list_remove(TCB_tid_waiting_t *thread);
+int blocked_list_insert(TCB_tid_waiting_t *thread);
+TCB_tid_waiting_t* blocked_list_thread_waiting_for(int tid);
+
+

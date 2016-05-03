@@ -7,7 +7,7 @@
 
 FILA2 *ready_active;
 FILA2 *ready_blocked;
-// TCB_queue_t *blocked_list_mutex;
+FILA2 *semaphore_list;
 // TCB_queue_t *blocked_list_waiting;
 // TCB_waiting_t *blocked_tid_list;
 
@@ -15,6 +15,7 @@ FILA2 *ready_blocked;
 void initializeAllQueues() {
 	CreateFila2(ready_active);
 	CreateFila2(ready_blocked);
+	CreateFila2(semaphore_list);
 }
 
 
@@ -51,7 +52,7 @@ TCB_t* blocked_thread_waiting_for_tid() {
 // }
 
 // /*----------------------------------------------------------------------------*/
-void blocked_tid_list_remove(int blocked_id) {
+void semaphore_list_append(int blocked_id) {
 
 //   if(blocked_tid_list == NULL) {
 //       blocked_tid_list = NULL;       
