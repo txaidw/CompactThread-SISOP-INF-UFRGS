@@ -7,6 +7,9 @@ LIB_DIR=../lib
 
 all: exemplo mandel teste_vetor barbeiro filosofos prodcons series
 
+t: t.c $(LIB_DIR)/libcthread.a
+	$(CC) -o t t.c -L$(LIB_DIR) -lcthread -Wall
+
 exemplo: exemplo.c $(LIB_DIR)/libcthread.a
 	$(CC) -o exemplo exemplo.c -L$(LIB_DIR) -lcthread -Wall
 
@@ -29,7 +32,7 @@ series: series.c $(LIB_DIR)/libcthread.a
 	$(CC) -o series series.c -L$(LIB_DIR) -lcthread -lm -Wall
 
 clean:
-	rm -rf exemplo mandel teste_vetor barbeiro filosofos prodcons series *~
+	rm -rf exemplo mandel teste_vetor barbeiro filosofos prodcons series t *~
 
 
 

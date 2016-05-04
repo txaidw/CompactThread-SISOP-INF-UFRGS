@@ -7,6 +7,8 @@
 
 #define _XOPEN_SOURCE 600 // Solves a OSX deprecated library problem of ucontext.h
 #include <ucontext.h>
+#include "../include/cthread.h"
+#include <stdbool.h>
 
 #ifndef __cdata__
 #define __cdata__
@@ -20,7 +22,7 @@
 #define ERROR_CODE -1
 #define SUCCESS_CODE 0
 
-#define CPRINT(X) printf X // <--- For DEBUG uncommet the print!
+#define CPRINT(X) //printf X // <--- For DEBUG uncommet the print!
 
 /* NÃO ALTERAR ESSA struct */
 typedef struct s_TCB { 
@@ -45,11 +47,7 @@ TCB_t* ready_queue_return_thread_with_id(int tid);
 bool ready_queue_is_empty();
 
 int semaphore_list_append_if_not_contained(csem_t *sem);
-TCB_t* semaphore_list_remove_first(csem_t *sem);
-
-// TCB_t* blocked_thread_waiting_for_tid(int);
-// int tid_blocked_list_insert(TCB_tid_waiting_t *entry);
-// int tid_blocked_list_remove(TCB_tid_waiting_t *entry);
+TCB_t* semaphore_list_remove_and_return_first_thread_from(csem_t *sem);
 
 int blocked_list_remove(TCB_tid_waiting_t *thread);
 int blocked_list_insert(TCB_tid_waiting_t *thread);

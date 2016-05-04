@@ -16,7 +16,10 @@ INC_DIR=./include
 BIN_DIR=./bin
 SRC_DIR=./src
 
-all: cdata.o cthread.o libcthread
+all: fila2.o cdata.o cthread.o libcthread
+
+fila2.o:
+	$(CC) -c $(SRC_DIR)/fila2.c -o $(BIN_DIR)/fila2.o -Wall
 
 cdata.o:
 	$(CC) -c $(SRC_DIR)/cdata.c -o $(BIN_DIR)/cdata.o -Wall
@@ -24,7 +27,7 @@ cdata.o:
 cthread.o:
 	$(CC) -c $(SRC_DIR)/cthread.c -o $(BIN_DIR)/cthread.o -Wall
 
-libcthread: cdata.o cthread.o
+libcthread: fila2.o cdata.o cthread.o
 	ar crs $(LIB_DIR)/libcthread.a $(BIN_DIR)/fila2.o $(BIN_DIR)/cdata.o $(BIN_DIR)/cthread.o
 
 clean:

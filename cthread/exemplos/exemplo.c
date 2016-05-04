@@ -14,7 +14,6 @@
 
 void* func0(void *arg) {
 	printf("Eu sou a thread ID0 imprimindo %d\n", *((int *)arg));
-	return;
 }
 
 void* func1(void *arg) {
@@ -29,7 +28,7 @@ int main(int argc, char *argv[]) {
 	id0 = ccreate(func0, (void *)&i);
 	id1 = ccreate(func1, (void *)&i);
 
-	printf("Eu sou a main após a criação de ID0 e ID1\n");
+	printf("Eu sou a main apos a criacao de ID0 e ID1\n");
 
 	cjoin(id0);
 	cjoin(id1);
