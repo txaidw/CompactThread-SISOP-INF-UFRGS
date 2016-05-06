@@ -195,11 +195,11 @@ int internal_init() {
 			//CPRINT(("[C]: init_main_thread\n"));
 			volatile bool main_thread_created = false;
 			if (!main_thread_created) {
-				//CPRINT(("DONT UNDERSTAND WHY: NO IDEIA WHY THIS WORK"));
+				//CPRINT(("?????"));
 				main_thread_created = true;
 				run_scheduler();
 			} else {
-				//CPRINT(("DONT UNDERSTAND WHY:"));
+				//CPRINT(("?????"));
 			}
 			return SUCCESS_CODE;
 		}
