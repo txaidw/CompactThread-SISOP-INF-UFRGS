@@ -5,7 +5,7 @@
  *
  */
 
-#define _XOPEN_SOURCE 600 // Solves a OSX deprecated library problem of ucontext.h
+#define _XOPEN_SOURCE 600 // resolve o problema do OS X com o ucontext.h
 #include <ucontext.h>
 #include "../include/cthread.h"
 #include <stdbool.h>
@@ -22,7 +22,7 @@
 #define ERROR_CODE -1
 #define SUCCESS_CODE 0
 
-#define CPRINT(X) //printf X // <--- For DEBUG uncommet the print!
+//#define CPRINT(X) //printf X // <--- For DEBUG uncommet the print!
 
 /* NÃO ALTERAR ESSA struct */
 typedef struct s_TCB { 

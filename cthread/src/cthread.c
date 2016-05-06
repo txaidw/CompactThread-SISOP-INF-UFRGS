@@ -1,4 +1,4 @@
-#define _XOPEN_SOURCE 600 // Solves a OSX deprecated library problem of ucontext.h
+#define _XOPEN_SOURCE 600 // Resolve um problema do OS X com ucontext.h
 #include <ucontext.h>
 
 #include "../include/cthread.h"
@@ -15,7 +15,7 @@
 /*----------------------------------------------------------------------------*/
 int global_var_tid = 0;
 ucontext_t *ending_contex = NULL;
-static bool initialized = false; // Library was already initialized
+static bool initialized = false; // Library já foi iniciada
 TCB_t *current_running_thread = NULL;
 
 
@@ -24,12 +24,12 @@ TCB_t *current_running_thread = NULL;
 /*----------------------------------------------------------------------------*/
 
 
-/// Returns a new TCB from the ready queues
+/// Retorna um novo TCB da lista de aptos 
 /// 
 TCB_t* get_new_thread() {
 	TCB_t *first_thread = ready_queue_remove_and_return();
 	if (first_thread == NULL) {
-		CPRINT(("ERROR_CODE: first_thread == NULL\n"));
+		//CPRINT(("ERROR_CODE: first_thread == NULL\n"));
 		return NULL;
 	} else {
 		return first_thread;
@@ -41,19 +41,18 @@ TCB_t* get_new_thread() {
 // /// It handles the current_running_thread, blocking, seting the context, etc.
 // /// And after this it pops another thread from the queue, and puts in execution.
 int run_scheduler() {
-	/* Remove current thread from the ready queue. */
-	CPRINT(("[C]: SCHEDULER STARTED \n"));
+	/* Remove thread corrente da lista de apta */
+	//CPRINT(("[C]: SCHEDULER STARTED \n"));
 	volatile bool already_swapped_context = false;
 
-	// Leaving the Execution
+	// Deixando a execução
 	if (current_running_thread != NULL) {
-		// There is a thread active
+		// Tem uma thread ativa
 		switch(current_running_thread->state) {
 			case PROCST_EXEC: {
-				/// current_running_thread was executing but now should be
-				/// re-inserted on the ready queue (Usually after a Yield).
+				/// current_running_thread estava executando mas agora vai ser reincerida na lista de apta
 				
-				CPRINT(("[C]: Thread Yield: \n", current_running_thread->tid));
+				//CPRINT(("[C]: Thread Yield: \n", current_running_thread->tid));
 				current_running_thread->state = PROCST_APTO;
 				ready_queue_insert(current_running_thread);
 				getcontext(&(current_running_thread->context));
@@ -62,30 +61,30 @@ int run_scheduler() {
 			case PROCST_TERMINO:
 				break;
 			case PROCST_BLOQ: {
-				CPRINT(("[C]: Blocking thread with id: %d\n", current_running_thread->tid));
+				//CPRINT(("[C]: Blocking thread with id: %d\n", current_running_thread->tid));
 				getcontext(&(current_running_thread->context));
 				break;
 			}
 			case PROCST_CRIACAO:
-				CPRINT(("[C]: First time the thread ran\n"));
+				//CPRINT(("[C]: First time the thread ran\n"));
 				break;
 			case PROCST_APTO:
-				CPRINT(("[C]: Thread wasnt running\n"));
+				//CPRINT(("[C]: Thread wasnt running\n"));
 				break;
 		}
 	}
 	
-	// Back to Execution
+	// De volta a execução
 	if (!already_swapped_context) {
 		already_swapped_context = true;
 
 		current_running_thread = get_new_thread(); 
 
 		if (current_running_thread == NULL || current_running_thread->tid < 0) {
-			CPRINT(("[C ERROR]: ERROR_CODE: f_thread == NULL || f_thread->tid < 0\n"));
+			//CPRINT(("[C ERROR]: ERROR_CODE: f_thread == NULL || f_thread->tid < 0\n"));
 			return ERROR_CODE;
 		} else {
-			CPRINT(("[C]: Thread %d is active now\n", current_running_thread->tid));
+			//CPRINT(("[C]: Thread %d is active now\n", current_running_thread->tid));
 			current_running_thread->state = PROCST_EXEC;
     		setcontext(&(current_running_thread->context));
     		return SUCCESS_CODE;
@@ -96,23 +95,22 @@ int run_scheduler() {
 }
 
 
-
-/// The function executed by the end_thread_context, on the end of each thread execution (via uc_link)
-/// Besides freeing resources it unlocks threads that were previously waiting for it.
+/// A função executa no fim de end_thread_context, no fim de cada execução de thread (pelo uc_link)
+/// Além de liberar recursos ela destranca threads que estavam no estado wait, antes.
 void end_thread_execution() {
 	if(current_running_thread != NULL) {
 		int runnig_tid = current_running_thread->tid;
 
-		CPRINT(("[C]: Thread %d is beeing released\n", runnig_tid));
+		//CPRINT(("[C]: Thread %d is beeing released\n", runnig_tid));
 		current_running_thread->state = PROCST_TERMINO;
 
 		free(current_running_thread);
 		current_running_thread = NULL;
-		// Search for a thread that is waiting for this one to finish.
+		// Procura pela thread que estava esperando esta aqui terminar.
 		TCB_tid_waiting_t *waiting_thread = blocked_list_thread_waiting_for(runnig_tid);
-		// There was a thread waiting for it to finish
+		// Existia uma thread esperando por esta terminar.
 		if (waiting_thread != NULL) {
-			CPRINT(("[C] A thread was waiting for this to finish\n"));
+			//CPRINT(("[C] A thread was waiting for this to finish\n"));
 
 			blocked_list_remove(waiting_thread);
 			waiting_thread->blocked_thread->state = PROCST_APTO;
@@ -120,11 +118,11 @@ void end_thread_execution() {
 			ready_queue_insert(waiting_thread->blocked_thread);
 			run_scheduler();
 		} else {
-			CPRINT(("[C] No thread was waiting for this to finish\n"));
+			//CPRINT(("[C] No thread was waiting for this to finish\n"));
 			run_scheduler();
 		}
 	} else {
-		CPRINT(("ERROR_CODE: No thread in the queue;\n"));
+		//CPRINT(("ERROR_CODE: No thread in the queue;\n"));
 	}
 }
 
@@ -133,8 +131,8 @@ void end_thread_execution() {
 /*                            LIB INITIALIZATION                              */
 /*----------------------------------------------------------------------------*/
 
-/// This function is responsable to the creation of the main thread TCB
-/// and insert in the ready queue
+/// Essa função é responsável pela criação da thread TCB
+/// E inserí-la na lista de aptos
 int init_main_thread() {
 	TCB_t *thread = (TCB_t*)malloc(sizeof(TCB_t));
 
@@ -142,7 +140,7 @@ int init_main_thread() {
 	thread->state = PROCST_CRIACAO;
 	
 	if (((thread->context).uc_stack.ss_sp = malloc(SIGSTKSZ)) == NULL) {
-		CPRINT(("[C ERROR]: No memory for stack allocation!"));
+		//CPRINT(("[C ERROR]: No memory for stack allocation!"));
 		return ERROR_CODE;
 	} else {
 		(thread->context).uc_stack.ss_size = SIGSTKSZ;
@@ -154,8 +152,8 @@ int init_main_thread() {
 }
 
 
-// /// This initializer creates a end_thread_context, that runs the end_thread_execution function
-// /// Each Thread that reaches the end, links (via uc_link) to this context, that handles desallock and unlock threads waiting
+// /// Esse inicializador cria a end_thread_context, que roda a end_thread_execution
+// /// Cada thread que chega ao fim linka à este contexto (com uc_link)que cuida de desalocar e liberar threads que estão esperando
 int init_end_thread_context() {
 	ending_contex = (ucontext_t *) malloc(sizeof(ucontext_t));
 
@@ -172,37 +170,36 @@ int init_end_thread_context() {
 }
 
 
-/// This function is called only one time, on the first function provided
-/// by the lib.
+/// Essa função é chamada uma única vez, na primeira função provida pela biblioteca (lib).
 int internal_init() {
 	if (!initialized) {
 		initialized = true;
 		global_var_tid = 0;
 		
 		if (initializeAllQueues() != SUCCESS_CODE) {
-			CPRINT(("ERROR_CODE: initializeAllQueues"));
+			//CPRINT(("ERROR_CODE: initializeAllQueues"));
 			return ERROR_CODE;			
 		}
 
 		else if (init_end_thread_context() != SUCCESS_CODE) {
-			CPRINT(("ERROR_CODE: init_end_thread_context"));
+			//CPRINT(("ERROR_CODE: init_end_thread_context"));
 			return ERROR_CODE;
 		}
 
 		else if (init_main_thread() != SUCCESS_CODE) {
-			CPRINT(("ERROR_CODE: init_main_thread"));
+			//CPRINT(("ERROR_CODE: init_main_thread"));
 			return ERROR_CODE;
 		}
 
 		else { 
-			CPRINT(("[C]: init_main_thread\n"));
+			//CPRINT(("[C]: init_main_thread\n"));
 			volatile bool main_thread_created = false;
 			if (!main_thread_created) {
-				CPRINT(("DONT UNDERSTAND WHY: NO IDEIA WHY THIS WORK"));
+				//CPRINT(("DONT UNDERSTAND WHY: NO IDEIA WHY THIS WORK"));
 				main_thread_created = true;
 				run_scheduler();
 			} else {
-				CPRINT(("DONT UNDERSTAND WHY:"));
+				//CPRINT(("DONT UNDERSTAND WHY:"));
 			}
 			return SUCCESS_CODE;
 		}
@@ -223,7 +220,7 @@ int ccreate (void* (*start)(void*), void *arg) {
 	internal_init();
 	
 	int new_tid = ++global_var_tid;
-	CPRINT(("[C] Creating new thread with tid: %d\n", new_tid));
+	//CPRINT(("[C] Creating new thread with tid: %d\n", new_tid));
 	
 	TCB_t *thread = (TCB_t*)malloc(sizeof(TCB_t));
 	thread->tid = new_tid;
@@ -232,7 +229,7 @@ int ccreate (void* (*start)(void*), void *arg) {
 	getcontext(&(thread->context));
 	
 	if (((thread->context).uc_stack.ss_sp = malloc(SIGSTKSZ)) == NULL) {
-		CPRINT(("[C ERROR]: No memory for stack allocation!"));
+		//CPRINT(("[C ERROR]: No memory for stack allocation!"));
 		return ERROR_CODE;
 	} else {
 		(thread->context).uc_stack.ss_size = SIGSTKSZ;
@@ -249,7 +246,7 @@ int cyield(void) {
 	internal_init();
 
 	if(!ready_queue_is_empty()) {
-		CPRINT(("[C] Yield\n"));
+		//CPRINT(("[C] Yield\n"));
 		return run_scheduler();
 	} else {
 		return ERROR_CODE;
@@ -309,11 +306,11 @@ int csem_init(csem_t *sem, int count) {
 int cwait(csem_t *sem) {
 	internal_init();
 
-	CPRINT(("[C] REQUESTING SEMAPHORE WAIT\n"));
+	//CPRINT(("[C] REQUESTING SEMAPHORE WAIT\n"));
 	if(sem != NULL){
 		if (sem->count <= 0) {
-			// The resouce is ALREADY being used, so we must block the thread.
-			CPRINT(("Already locked\n"));
+			// O recurso JÁ ESTÁ sendo usado, então precisamos bloquear a thread.
+		//	CPRINT(("Already locked\n"));
 
 			AppendFila2(sem->fila, current_running_thread);
 	    	current_running_thread->state = PROCST_BLOQ;
@@ -321,8 +318,8 @@ int cwait(csem_t *sem) {
 	    	semaphore_list_append_if_not_contained(sem);
 	    	return run_scheduler();
 		} else {
-			// The resouce is NOT being used, so the thread is goint to use.
-			CPRINT(("[C] Semaphore wasnt locked\n"));
+			// O recurso NÃO ESTÁ sendo usado, então a thread vai usá-lo.
+			//CPRINT(("[C] Semaphore wasnt locked\n"));
 			sem->count -= 1;
 			return SUCCESS_CODE;
 		}
@@ -336,23 +333,23 @@ int cwait(csem_t *sem) {
 ///
 int csignal(csem_t *sem) {
 	internal_init();
-	CPRINT(("[C] SEMAPHORE UNLOCKING: "));
+	//CPRINT(("[C] SEMAPHORE UNLOCKING: "));
 	if (sem != NULL) {
 		sem->count += 1;
 
 		TCB_t *thread = (TCB_t *)semaphore_list_remove_and_return_first_thread_from(sem);
 		if (thread != NULL) {
-			// Mutex is locked and there is threads on the blocked queue
-			CPRINT(("Now Unlocking\n"));
+			// Mutex é bloqueado e tem threads na lista de bloqueadas
+			//CPRINT(("Now Unlocking\n"));
 			thread->state = PROCST_APTO;
 			return ready_queue_insert(thread);
 		} else {
-			CPRINT(("Not Locked\n"));
+			//CPRINT(("Not Locked\n"));
 
 			return SUCCESS_CODE;
 		}
 	} else {
-		CPRINT(("\n[C ERROR]: Semaphore unlock error\n"));
+		//CPRINT(("\n[C ERROR]: Semaphore unlock error\n"));
 		return ERROR_CODE;
 	}
 }
